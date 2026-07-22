@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, Plus, FileText, Calendar, Trash2, Edit3, Users, HelpCircle, Video, Image as ImageIcon, CheckCircle, XCircle, Archive, MessageSquare } from "lucide-react";
+import { LogOut, Plus, FileText, Calendar, Trash2, Edit3, Users, HelpCircle, Video, Image as ImageIcon, CheckCircle, XCircle, Archive, ShieldAlert, Key } from "lucide-react";
 
 interface Noticia {
   id: number;
@@ -57,12 +57,21 @@ interface Propuesta {
   fecha_envio: string;
 }
 
+interface Usuario {
+  id: number;
+  nombre: string;
+  email: string;
+  rol: "admin" | "editor" | "revisor";
+  fecha_registro: string;
+}
+
 export default function AdminDashboardPage() {
-  const [activeTab, setActiveTab] = useState<"noticias" | "agenda" | "voluntarios" | "propuestas">("noticias");
+  const [activeTab, setActiveTab] = useState<"noticias" | "agenda" | "voluntarios" | "propuestas" | "usuarios">("noticias");
   const [noticias, setNoticias] = useState<Noticia[]>([]);
   const [agenda, setAgenda] = useState<Evento[]>([]);
   const [voluntarios, setVoluntarios] = useState<Voluntario[]>([]);
   const [propuestas, setPropuestas] = useState<Propuesta[]>([]);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -90,6 +99,12 @@ export default function AdminDashboardPage() {
   const [ubicacionAgenda, setUbicacionAgenda] = useState("");
   const [transmisionAgenda, setTransmisionAgenda] = useState("");
   const [estadoAgenda, setEstadoAgenda] = useState<"programado" | "concluido" | "cancelado">("programado");
+
+  // Estados para Formulario de Usuarios
+  const [nombreUsuario, setNombreUsuario] = useState("");
+  const [emailUsuario, setEmailUsuario] = useState("");
+  const [passwordUsuario, setPasswordUsuario] = useState("");
+  const [rolUsuario, setRolUsuario] = useState<"admin" | "editor" | "revisor">("editor");
 
   useEffect(() => {
     loadData();
@@ -130,6 +145,15 @@ export default function AdminDashboardPage() {
         }
         const data = await res.json();
         if (data.success) setPropuestas(data.propuestas);
+      } else if (activeTab === "usuarios") {
+        const res = await fetch("/api/admin/usuarios");
+        if (res.status === 451 || res.status === 403) {
+          alert("Acceso denegado: Solo el Administrador Maestro puede gestionar accesos.");
+          setActiveTab("noticias");
+          return;
+        }
+        const data = await res.json();
+        if (data.success) setUsuarios(data.usuarios);
       }
     } catch (err) {
       console.error(err);
@@ -291,7 +315,65 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // CONTROL VOLUNTARIOS (APROBAR / RECHAZAR)
+  // CRUD USUARIOS
+  const handleSaveUsuario = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const payload = {
+      id: currentId,
+      nombre: nombreUsuario,
+      email: emailUsuario,
+      password: passwordUsuario,
+      rol: rolUsuario,
+    };
+
+    const method = currentId ? "PUT" : "POST";
+    const res = await fetch("/api/admin/usuarios", {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      alert(data.message);
+      setIsEditing(false);
+      resetUsuarioForm();
+      loadData();
+    } else {
+      alert(data.error);
+    }
+  };
+
+  const resetUsuarioForm = () => {
+    setCurrentId(null);
+    setNombreUsuario("");
+    setEmailUsuario("");
+    setPasswordUsuario("");
+    setRolUsuario("editor");
+  };
+
+  const handleEditUsuarioClick = (u: Usuario) => {
+    setCurrentId(u.id);
+    setNombreUsuario(u.nombre);
+    setEmailUsuario(u.email);
+    setPasswordUsuario(""); // se deja vacío si no se quiere cambiar
+    setRolUsuario(u.rol);
+    setIsEditing(true);
+  };
+
+  const handleDeleteUsuario = async (id: number) => {
+    if (!confirm("¿Estás seguro de eliminar este usuario del panel?")) return;
+    const res = await fetch(`/api/admin/usuarios?id=${id}`, { method: "DELETE" });
+    const data = await res.json();
+    if (res.ok) {
+      alert(data.message);
+      loadData();
+    } else {
+      alert(data.error);
+    }
+  };
+
+  // CONTROL VOLUNTARIOS
   const handleUpdateVoluntarioStatus = async (id: number, nuevoEstado: "aprobado" | "rechazado" | "pendiente") => {
     const res = await fetch("/api/admin/voluntarios", {
       method: "PUT",
@@ -307,7 +389,7 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // CONTROL PROPUESTAS (TOMAR EN CUENTA / ARCHIVAR)
+  // CONTROL PROPUESTAS
   const handleUpdatePropuestaStatus = async (id: number, nuevoEstado: "tomada_en_cuenta" | "archivada" | "pendiente") => {
     const res = await fetch("/api/admin/propuestas", {
       method: "PUT",
@@ -351,7 +433,7 @@ export default function AdminDashboardPage() {
           }`}
         >
           <FileText className="h-4 w-4" />
-          Noticias y Aprobación
+          Noticias
         </button>
         <button
           onClick={() => { setActiveTab("agenda"); setIsEditing(false); }}
@@ -379,6 +461,15 @@ export default function AdminDashboardPage() {
         >
           <HelpCircle className="h-4 w-4" />
           Propuestas ({propuestas.length})
+        </button>
+        <button
+          onClick={() => { setActiveTab("usuarios"); setIsEditing(false); }}
+          className={`flex-1 py-4 text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 ${
+            activeTab === "usuarios" ? "text-brand-gold border-b-2 border-brand-gold bg-zinc-950/40" : "text-zinc-400 hover:text-white"
+          }`}
+        >
+          <ShieldAlert className="h-4 w-4" />
+          Accesos / Usuarios
         </button>
       </div>
 
@@ -761,7 +852,6 @@ export default function AdminDashboardPage() {
             )}
           </div>
         ) : activeTab === "voluntarios" ? (
-          /* TABLA VOLUNTARIOS REALES */
           <div className="space-y-6">
             <h2 className="text-xl font-bold">Registro de Voluntarios de Campaña</h2>
             
@@ -808,14 +898,12 @@ export default function AdminDashboardPage() {
                         <button
                           onClick={() => handleUpdateVoluntarioStatus(v.id, "aprobado")}
                           className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[#25D366]/10 hover:bg-[#25D366]/20 transition-colors"
-                          title="Aceptar Voluntario"
                         >
                           <CheckCircle className="h-4 w-4 text-[#25D366]" />
                         </button>
                         <button
                           onClick={() => handleUpdateVoluntarioStatus(v.id, "rechazado")}
                           className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-red/10 hover:bg-brand-red/20 transition-colors"
-                          title="Rechazar"
                         >
                           <XCircle className="h-4 w-4 text-brand-red" />
                         </button>
@@ -826,8 +914,7 @@ export default function AdminDashboardPage() {
               </table>
             </div>
           </div>
-        ) : (
-          /* TABLA PROPUESTAS REALES */
+        ) : activeTab === "propuestas" ? (
           <div className="space-y-6">
             <h2 className="text-xl font-bold">Propuestas y Necesidades de los Vecinos</h2>
             
@@ -871,14 +958,12 @@ export default function AdminDashboardPage() {
                         <button
                           onClick={() => handleUpdatePropuestaStatus(p.id, "tomada_en_cuenta")}
                           className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[#25D366]/10 hover:bg-[#25D366]/20 transition-colors"
-                          title="Tomar en Cuenta"
                         >
                           <CheckCircle className="h-4 w-4 text-[#25D366]" />
                         </button>
                         <button
                           onClick={() => handleUpdatePropuestaStatus(p.id, "archivada")}
                           className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors"
-                          title="Archivar"
                         >
                           <Archive className="h-4 w-4 text-zinc-450" />
                         </button>
@@ -888,6 +973,149 @@ export default function AdminDashboardPage() {
                 </tbody>
               </table>
             </div>
+          </div>
+        ) : (
+          /* CRUD USUARIOS PANEL */
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold">Usuarios y Accesos al Panel</h2>
+              {!isEditing && (
+                <button
+                  onClick={() => { resetUsuarioForm(); setIsEditing(true); }}
+                  className="bg-brand-red text-white hover:bg-brand-red/90 px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all shadow"
+                >
+                  <Plus className="h-4 w-4" />
+                  Nuevo Usuario
+                </button>
+              )}
+            </div>
+
+            {isEditing ? (
+              <form onSubmit={handleSaveUsuario} className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 space-y-4 max-w-2xl mx-auto text-sm text-zinc-300">
+                <h3 className="text-lg font-bold text-white">
+                  {currentId ? "Editar Usuario" : "Registrar Nuevo Usuario"}
+                </h3>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-zinc-400 uppercase">Nombre Completo</label>
+                  <input
+                    type="text"
+                    required
+                    value={nombreUsuario}
+                    onChange={(e) => setNombreUsuario(e.target.value)}
+                    placeholder="Ej. Juan Pérez"
+                    className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red/30 text-white"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-zinc-400 uppercase">Email / Usuario</label>
+                    <input
+                      type="email"
+                      required
+                      value={emailUsuario}
+                      onChange={(e) => setEmailUsuario(e.target.value)}
+                      placeholder="ejemplo@jcllerena.com"
+                      className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red/30 text-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-zinc-400 uppercase">Rol de Acceso</label>
+                    <select
+                      value={rolUsuario}
+                      onChange={(e) => setRolUsuario(e.target.value as any)}
+                      className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red/30 text-white"
+                    >
+                      <option value="editor">Editor (Crea en borrador)</option>
+                      <option value="revisor">Revisor (Edita y aprueba)</option>
+                      <option value="admin">Administrador Maestro (Acceso Total)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-zinc-400 uppercase">
+                    Contraseña {currentId && "(Dejar en blanco para no modificar)"}
+                  </label>
+                  <div className="relative">
+                    <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                    <input
+                      type="password"
+                      required={!currentId}
+                      value={passwordUsuario}
+                      onChange={(e) => setPasswordUsuario(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full pl-10 pr-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red/30 text-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(false)}
+                    className="bg-zinc-800 hover:bg-zinc-700 px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-brand-red text-white hover:bg-brand-red/90 px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider"
+                  >
+                    Guardar Cambios
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-xl">
+                <table className="w-full text-left text-sm text-zinc-300">
+                  <thead className="bg-zinc-950 text-zinc-400 text-xs font-bold uppercase tracking-wider border-b border-zinc-800">
+                    <tr>
+                      <th className="px-6 py-4">Nombre Completo</th>
+                      <th className="px-6 py-4">Email / Usuario</th>
+                      <th className="px-6 py-4">Rol</th>
+                      <th className="px-6 py-4">Fecha Registro</th>
+                      <th className="px-6 py-4 text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-800">
+                    {usuarios.map((u) => (
+                      <tr key={u.id} className="hover:bg-zinc-950/40">
+                        <td className="px-6 py-4 font-bold text-white">{u.nombre}</td>
+                        <td className="px-6 py-4">{u.email}</td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                            u.rol === "admin"
+                              ? "bg-brand-red/10 text-brand-red"
+                              : u.rol === "revisor"
+                              ? "bg-blue-500/10 text-blue-500"
+                              : "bg-zinc-700 text-zinc-300"
+                          }`}>
+                            {u.rol}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">{new Date(u.fecha_registro).toLocaleDateString("es-ES")}</td>
+                        <td className="px-6 py-4 text-right space-x-2">
+                          <button
+                            onClick={() => handleEditUsuarioClick(u)}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors"
+                          >
+                            <Edit3 className="h-4 w-4 text-brand-gold" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUsuario(u.id)}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors"
+                          >
+                            <Trash2 className="h-4 w-4 text-brand-red" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </div>
