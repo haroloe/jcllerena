@@ -1,24 +1,27 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { Menu, X, Facebook, Instagram } from "lucide-react";
 
 const NAV_ITEMS = [
-  { label: "Inicio", href: "#inicio" },
-  { label: "Conoce a Juan Carlos", href: "#biografia" },
-  { label: "Experiencia", href: "#experiencia" },
-  { label: "Visión 2030", href: "#vision" },
-  { label: "Propuestas", href: "#propuestas" },
+  { label: "Inicio", href: "/#inicio" },
+  { label: "Conoce a Juan Carlos", href: "/#biografia" },
+  { label: "Experiencia", href: "/#experiencia" },
+  { label: "Visión 2030", href: "/#vision" },
+  { label: "Propuestas", href: "/#propuestas" },
   { label: "Noticias", href: "/noticias" },
-  { label: "Agenda", href: "#agenda" },
-  { label: "Galería", href: "#galeria" },
-  { label: "Participa", href: "#participa" },
-  { label: "Contacto", href: "#contacto" },
+  { label: "Agenda", href: "/agenda" },
+  { label: "Galería", href: "/#galeria" },
+  { label: "Participa", href: "/#participa" },
+  { label: "Contacto", href: "/#contacto" },
 ];
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const pathname = usePathname();
+  const isHome = pathname === "/";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -38,9 +41,9 @@ export default function Header() {
 
   return (
     <header
-      className={`fixed top-0 left-0 w-full z-40 transition-all duration-300 ${
-        isScrolled 
-          ? "bg-brand-dark/95 backdrop-blur-md shadow-md py-3" 
+      className={`fixed top-0 left-0 w-full z-45 transition-all duration-300 ${
+        isScrolled || !isHome
+          ? "bg-brand-dark/98 backdrop-blur-md shadow-md py-3 border-b border-white/5" 
           : "bg-transparent py-5"
       }`}
     >

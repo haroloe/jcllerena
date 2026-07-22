@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, Plus, FileText, CheckCircle2, Trash2, Edit3, Users, HelpCircle, Eye } from "lucide-react";
+import { LogOut, Plus, FileText, Calendar, Trash2, Edit3, Users, HelpCircle, Video, Image as ImageIcon } from "lucide-react";
 
 interface Noticia {
   id: number;
@@ -16,47 +16,50 @@ interface Noticia {
   estado: "borrador" | "publicado";
 }
 
-interface Voluntario {
+interface Evento {
   id: number;
-  nombre: string;
-  apellidos: string;
-  telefono: string;
-  email: string;
+  titulo: string;
+  fecha_hora: string;
+  lugar: string;
   comunidad_sector: string;
-  forma_participacion: string;
-  disponibilidad: string;
-  fecha_registro: string;
-}
-
-interface Propuesta {
-  id: number;
-  nombre_completo: string;
-  telefono: string;
-  email: string | null;
-  comunidad_sector: string;
-  categoria: string;
-  descripcion: string;
-  fecha_envio: string;
+  descripcion: string | null;
+  imagen_url: string | null;
+  ubicacion_url: string | null;
+  transmision_url: string | null;
+  estado: "programado" | "concluido" | "cancelado";
 }
 
 export default function AdminDashboardPage() {
-  const [activeTab, setActiveTab] = useState<"noticias" | "voluntarios" | "propuestas">("noticias");
+  const [activeTab, setActiveTab] = useState<"noticias" | "agenda" | "voluntarios" | "propuestas">("noticias");
   const [noticias, setNoticias] = useState<Noticia[]>([]);
-  const [voluntarios, setVoluntarios] = useState<Voluntario[]>([]);
-  const [propuestas, setPropuestas] = useState<Propuesta[]>([]);
-  
-  // Estados para el Formulario de Noticias
-  const [isEditing, setIsEditing] = useState(false);
-  const [currentId, setCurrentId] = useState<number | null>(null);
-  const [titulo, setTitulo] = useState("");
-  const [resumen, setResumen] = useState("");
-  const [contenido, setContenido] = useState("");
-  const [categoria, setCategoria] = useState("Campaña");
-  const [fecha, setFecha] = useState("");
-  const [estado, setEstado] = useState<"borrador" | "publicado">("borrador");
+  const [agenda, setAgenda] = useState<Evento[]>([]);
   
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+
+  // Estado de Edición
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentId, setCurrentId] = useState<number | null>(null);
+
+  // Estados para Formulario de Noticias
+  const [tituloNoticia, setTituloNoticia] = useState("");
+  const [resumenNoticia, setResumenNoticia] = useState("");
+  const [contenidoNoticia, setContenidoNoticia] = useState("");
+  const [categoriaNoticia, setCategoriaNoticia] = useState("Campaña");
+  const [fechaNoticia, setFechaNoticia] = useState("");
+  const [imagenNoticia, setImagenNoticia] = useState("");
+  const [estadoNoticia, setEstadoNoticia] = useState<"borrador" | "publicado">("borrador");
+
+  // Estados para Formulario de Agenda
+  const [tituloAgenda, setTituloAgenda] = useState("");
+  const [fechaHoraAgenda, setFechaHoraAgenda] = useState("");
+  const [lugarAgenda, setLugarAgenda] = useState("");
+  const [sectorAgenda, setSectorAgenda] = useState("Orcopampa (Capital)");
+  const [descripcionAgenda, setDescripcionAgenda] = useState("");
+  const [imagenAgenda, setImagenAgenda] = useState("");
+  const [ubicacionAgenda, setUbicacionAgenda] = useState("");
+  const [transmisionAgenda, setTransmisionAgenda] = useState("");
+  const [estadoAgenda, setEstadoAgenda] = useState<"programado" | "concluido" | "cancelado">("programado");
 
   useEffect(() => {
     loadData();
@@ -65,7 +68,7 @@ export default function AdminDashboardPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      // Cargar noticias del admin
+      // 1. Cargar Noticias
       const resNoticias = await fetch("/api/admin/noticias");
       if (resNoticias.status === 401) {
         router.push("/admin/login");
@@ -76,9 +79,12 @@ export default function AdminDashboardPage() {
         setNoticias(dataNoticias.noticias);
       }
 
-      // Cargar propuestas y voluntarios de forma mockeada o endpoints seguros si existieran.
-      // Dado que son confidenciales, el admin los lee directamente de la base de datos local
-      // pero para simplificar, cargaremos un visor o placeholders.
+      // 2. Cargar Agenda
+      const resAgenda = await fetch("/api/admin/agenda");
+      const dataAgenda = await resAgenda.json();
+      if (dataAgenda.success) {
+        setAgenda(dataAgenda.agenda);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -91,16 +97,18 @@ export default function AdminDashboardPage() {
     router.push("/admin/login");
   };
 
+  // CRUD NOTICIAS
   const handleSaveNoticia = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload = {
       id: currentId,
-      titulo,
-      resumen,
-      contenido,
-      fecha,
-      categoria,
-      estado,
+      titulo: tituloNoticia,
+      resumen: resumenNoticia,
+      contenido: contenidoNoticia,
+      fecha: fechaNoticia,
+      categoria: categoriaNoticia,
+      imagen_principal: imagenNoticia || null,
+      estado: estadoNoticia,
     };
 
     const method = currentId ? "PUT" : "POST";
@@ -114,31 +122,33 @@ export default function AdminDashboardPage() {
     if (res.ok) {
       alert(data.message);
       setIsEditing(false);
-      resetForm();
+      resetNoticiaForm();
       loadData();
     } else {
       alert(data.error);
     }
   };
 
-  const resetForm = () => {
+  const resetNoticiaForm = () => {
     setCurrentId(null);
-    setTitulo("");
-    setResumen("");
-    setContenido("");
-    setCategoria("Campaña");
-    setFecha("");
-    setEstado("borrador");
+    setTituloNoticia("");
+    setResumenNoticia("");
+    setContenidoNoticia("");
+    setCategoriaNoticia("Campaña");
+    setFechaNoticia("");
+    setImagenNoticia("");
+    setEstadoNoticia("borrador");
   };
 
-  const handleEditClick = (n: Noticia) => {
+  const handleEditNoticiaClick = (n: Noticia) => {
     setCurrentId(n.id);
-    setTitulo(n.titulo);
-    setResumen(n.resumen);
-    setContenido(n.contenido);
-    setCategoria(n.categoria);
-    setFecha(n.fecha.substring(0, 10));
-    setEstado(n.estado);
+    setTituloNoticia(n.titulo);
+    setResumenNoticia(n.resumen);
+    setContenidoNoticia(n.contenido);
+    setCategoriaNoticia(n.categoria);
+    setFechaNoticia(n.fecha.substring(0, 10));
+    setImagenNoticia(n.imagen_principal || "");
+    setEstadoNoticia(n.estado);
     setIsEditing(true);
   };
 
@@ -147,6 +157,89 @@ export default function AdminDashboardPage() {
     const res = await fetch(`/api/admin/noticias?id=${id}`, { method: "DELETE" });
     if (res.ok) {
       alert("Noticia eliminada.");
+      loadData();
+    } else {
+      const data = await res.json();
+      alert(data.error);
+    }
+  };
+
+  // CRUD AGENDA
+  const handleSaveAgenda = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validar enlaces de video (YouTube / Drive) si se provee
+    if (transmisionAgenda) {
+      const lower = transmisionAgenda.toLowerCase();
+      if (!lower.includes("youtube.com") && !lower.includes("youtu.be") && !lower.includes("drive.google.com")) {
+        alert("Atención: El enlace de video debe ser de YouTube o Google Drive (no archivos locales).");
+        return;
+      }
+    }
+
+    const payload = {
+      id: currentId,
+      titulo: tituloAgenda,
+      fecha_hora: fechaHoraAgenda.replace("T", " ") + ":00", // formatear para datetime de MySQL
+      lugar: lugarAgenda,
+      comunidad_sector: sectorAgenda,
+      descripcion: descripcionAgenda || null,
+      imagen_url: imagenAgenda || null,
+      ubicacion_url: ubicacionAgenda || null,
+      transmision_url: transmisionAgenda || null,
+      estado: estadoAgenda,
+    };
+
+    const method = currentId ? "PUT" : "POST";
+    const res = await fetch("/api/admin/agenda", {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      alert(data.message);
+      setIsEditing(false);
+      resetAgendaForm();
+      loadData();
+    } else {
+      alert(data.error);
+    }
+  };
+
+  const resetAgendaForm = () => {
+    setCurrentId(null);
+    setTituloAgenda("");
+    setFechaHoraAgenda("");
+    setLugarAgenda("");
+    setSectorAgenda("Orcopampa (Capital)");
+    setDescripcionAgenda("");
+    setImagenAgenda("");
+    setUbicacionAgenda("");
+    setTransmisionAgenda("");
+    setEstadoAgenda("programado");
+  };
+
+  const handleEditAgendaClick = (e: Evento) => {
+    setCurrentId(e.id);
+    setTituloAgenda(e.titulo);
+    setFechaHoraAgenda(e.fecha_hora.substring(0, 16)); // YYYY-MM-DDTHH:MM
+    setLugarAgenda(e.lugar);
+    setSectorAgenda(e.comunidad_sector);
+    setDescripcionAgenda(e.descripcion || "");
+    setImagenAgenda(e.imagen_url || "");
+    setUbicacionAgenda(e.ubicacion_url || "");
+    setTransmisionAgenda(e.transmision_url || "");
+    setEstadoAgenda(e.estado);
+    setIsEditing(true);
+  };
+
+  const handleDeleteAgenda = async (id: number) => {
+    if (!confirm("¿Estás seguro de eliminar esta actividad de la agenda?")) return;
+    const res = await fetch(`/api/admin/agenda?id=${id}`, { method: "DELETE" });
+    if (res.ok) {
+      alert("Actividad de la agenda eliminada.");
       loadData();
     } else {
       const data = await res.json();
@@ -185,13 +278,22 @@ export default function AdminDashboardPage() {
           Noticias y Aprobación
         </button>
         <button
+          onClick={() => { setActiveTab("agenda"); setIsEditing(false); }}
+          className={`flex-1 py-4 text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 ${
+            activeTab === "agenda" ? "text-brand-gold border-b-2 border-brand-gold bg-zinc-950/40" : "text-zinc-400 hover:text-white"
+          }`}
+        >
+          <Calendar className="h-4 w-4" />
+          Agenda y Actividades
+        </button>
+        <button
           onClick={() => { setActiveTab("voluntarios"); setIsEditing(false); }}
           className={`flex-1 py-4 text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 ${
             activeTab === "voluntarios" ? "text-brand-gold border-b-2 border-brand-gold bg-zinc-950/40" : "text-zinc-400 hover:text-white"
           }`}
         >
           <Users className="h-4 w-4" />
-          Voluntarios de Campaña
+          Voluntarios
         </button>
         <button
           onClick={() => { setActiveTab("propuestas"); setIsEditing(false); }}
@@ -200,7 +302,7 @@ export default function AdminDashboardPage() {
           }`}
         >
           <HelpCircle className="h-4 w-4" />
-          Propuestas Ciudadanas
+          Propuestas
         </button>
       </div>
 
@@ -212,12 +314,11 @@ export default function AdminDashboardPage() {
           </div>
         ) : activeTab === "noticias" ? (
           <div className="space-y-6">
-            {/* Cabecera Tab */}
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-bold">Gestión y Aprobación de Noticias</h2>
               {!isEditing && (
                 <button
-                  onClick={() => { resetForm(); setIsEditing(true); }}
+                  onClick={() => { resetNoticiaForm(); setIsEditing(true); }}
                   className="bg-brand-red text-white hover:bg-brand-red/90 px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all shadow"
                 >
                   <Plus className="h-4 w-4" />
@@ -227,7 +328,6 @@ export default function AdminDashboardPage() {
             </div>
 
             {isEditing ? (
-              /* Formulario Noticias */
               <form onSubmit={handleSaveNoticia} className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 space-y-4 max-w-2xl mx-auto text-sm text-zinc-300">
                 <h3 className="text-lg font-bold text-white">
                   {currentId ? "Editar Noticia" : "Redactar Nueva Noticia"}
@@ -238,8 +338,8 @@ export default function AdminDashboardPage() {
                   <input
                     type="text"
                     required
-                    value={titulo}
-                    onChange={(e) => setTitulo(e.target.value)}
+                    value={tituloNoticia}
+                    onChange={(e) => setTituloNoticia(e.target.value)}
                     className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red/30 text-white"
                   />
                 </div>
@@ -249,8 +349,8 @@ export default function AdminDashboardPage() {
                   <textarea
                     required
                     rows={2}
-                    value={resumen}
-                    onChange={(e) => setResumen(e.target.value)}
+                    value={resumenNoticia}
+                    onChange={(e) => setResumenNoticia(e.target.value)}
                     className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red/30 text-white"
                   />
                 </div>
@@ -260,10 +360,24 @@ export default function AdminDashboardPage() {
                   <textarea
                     required
                     rows={6}
-                    value={contenido}
-                    onChange={(e) => setContenido(e.target.value)}
+                    value={contenidoNoticia}
+                    onChange={(e) => setContenidoNoticia(e.target.value)}
                     className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red/30 text-white font-mono"
                   />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-zinc-400 uppercase">Ruta / Enlace Imagen Principal</label>
+                  <div className="relative">
+                    <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                    <input
+                      type="text"
+                      value={imagenNoticia}
+                      onChange={(e) => setImagenNoticia(e.target.value)}
+                      placeholder="/FOTOS/foto1.jpeg o URL externa"
+                      className="w-full pl-10 pr-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red/30 text-white"
+                    />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -272,16 +386,16 @@ export default function AdminDashboardPage() {
                     <input
                       type="date"
                       required
-                      value={fecha}
-                      onChange={(e) => setFecha(e.target.value)}
+                      value={fechaNoticia}
+                      onChange={(e) => setFechaNoticia(e.target.value)}
                       className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red/30 text-white"
                     />
                   </div>
                   <div className="space-y-1">
                     <label className="block text-xs font-bold text-zinc-400 uppercase">Categoría</label>
                     <select
-                      value={categoria}
-                      onChange={(e) => setCategoria(e.target.value)}
+                      value={categoriaNoticia}
+                      onChange={(e) => setCategoriaNoticia(e.target.value)}
                       className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red/30 text-white"
                     >
                       <option value="Campaña">Campaña</option>
@@ -291,13 +405,13 @@ export default function AdminDashboardPage() {
                     </select>
                   </div>
                   <div className="space-y-1">
-                    <label className="block text-xs font-bold text-zinc-400 uppercase">Estado (Aprobación)</label>
+                    <label className="block text-xs font-bold text-zinc-400 uppercase">Estado</label>
                     <select
-                      value={estado}
-                      onChange={(e) => setEstado(e.target.value as any)}
+                      value={estadoNoticia}
+                      onChange={(e) => setEstadoNoticia(e.target.value as any)}
                       className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red/30 text-white"
                     >
-                      <option value="borrador">Borrador (Oculto)</option>
+                      <option value="borrador">Borrador (Pendiente)</option>
                       <option value="publicado">Publicado (Aprobado)</option>
                     </select>
                   </div>
@@ -320,7 +434,6 @@ export default function AdminDashboardPage() {
                 </div>
               </form>
             ) : (
-              /* Tabla Noticias */
               <div className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-xl">
                 <table className="w-full text-left text-sm text-zinc-300">
                   <thead className="bg-zinc-950 text-zinc-400 text-xs font-bold uppercase tracking-wider border-b border-zinc-800">
@@ -349,16 +462,222 @@ export default function AdminDashboardPage() {
                         </td>
                         <td className="px-6 py-4 text-right space-x-2">
                           <button
-                            onClick={() => handleEditClick(n)}
+                            onClick={() => handleEditNoticiaClick(n)}
                             className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors"
-                            title="Editar / Aprobar"
                           >
                             <Edit3 className="h-4 w-4 text-brand-gold" />
                           </button>
                           <button
                             onClick={() => handleDeleteNoticia(n.id)}
                             className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors"
-                            title="Eliminar"
+                          >
+                            <Trash2 className="h-4 w-4 text-brand-red" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        ) : activeTab === "agenda" ? (
+          /* CRUD AGENDA */
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold">Agenda de Actividades de Campaña</h2>
+              {!isEditing && (
+                <button
+                  onClick={() => { resetAgendaForm(); setIsEditing(true); }}
+                  className="bg-brand-red text-white hover:bg-brand-red/90 px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all shadow"
+                >
+                  <Plus className="h-4 w-4" />
+                  Nueva Actividad
+                </button>
+              )}
+            </div>
+
+            {isEditing ? (
+              <form onSubmit={handleSaveAgenda} className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 space-y-4 max-w-2xl mx-auto text-sm text-zinc-300">
+                <h3 className="text-lg font-bold text-white">
+                  {currentId ? "Editar Actividad" : "Programar Nueva Actividad"}
+                </h3>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-zinc-400 uppercase">Título de Actividad</label>
+                  <input
+                    type="text"
+                    required
+                    value={tituloAgenda}
+                    onChange={(e) => setTituloAgenda(e.target.value)}
+                    placeholder="Ej. Encuentro Vecinal en Vizcacuto"
+                    className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red/30 text-white"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-zinc-400 uppercase">Fecha y Hora</label>
+                    <input
+                      type="datetime-local"
+                      required
+                      value={fechaHoraAgenda}
+                      onChange={(e) => setFechaHoraAgenda(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red/30 text-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-zinc-400 uppercase">Sector / Comunidad</label>
+                    <select
+                      value={sectorAgenda}
+                      onChange={(e) => setSectorAgenda(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red/30 text-white"
+                    >
+                      <option value="Orcopampa (Capital)">Orcopampa (Capital)</option>
+                      <option value="Vizcacuto">Vizcacuto</option>
+                      <option value="Choquetambo">Choquetambo</option>
+                      <option value="Marcani">Marcani</option>
+                      <option value="Calera">Calera</option>
+                      <option value="Huimpilca">Huimpilca</option>
+                      <option value="Misapuquio">Misapuquio</option>
+                      <option value="Panahua">Panahua</option>
+                      <option value="Lontojoya">Lontojoya</option>
+                      <option value="Sausa Huancarama">Sausa Huancarama</option>
+                      <option value="Huincocahua">Huincocahua</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-zinc-400 uppercase">Lugar Específico</label>
+                    <input
+                      type="text"
+                      required
+                      value={lugarAgenda}
+                      onChange={(e) => setLugarAgenda(e.target.value)}
+                      placeholder="Ej. Plaza Principal de Vizcacuto s/n"
+                      className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red/30 text-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-zinc-400 uppercase">Enlace Mapa Google Maps (Ubicación)</label>
+                    <input
+                      type="text"
+                      value={ubicacionAgenda}
+                      onChange={(e) => setUbicacionAgenda(e.target.value)}
+                      placeholder="URL del mapa"
+                      className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red/30 text-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-zinc-400 uppercase">Descripción / Detalles de Actividad</label>
+                  <textarea
+                    rows={3}
+                    value={descripcionAgenda}
+                    onChange={(e) => setDescripcionAgenda(e.target.value)}
+                    placeholder="Detalles sobre la mesa de trabajo o agenda del evento..."
+                    className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red/30 text-white"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-zinc-400 uppercase">Ruta / Enlace Imagen Promocional</label>
+                  <div className="relative">
+                    <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                    <input
+                      type="text"
+                      value={imagenAgenda}
+                      onChange={(e) => setImagenAgenda(e.target.value)}
+                      placeholder="/FOTOS/foto2.jpeg o enlace externo"
+                      className="w-full pl-10 pr-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red/30 text-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-zinc-400 uppercase flex items-center gap-1.5">
+                      <Video className="h-4 w-4 text-zinc-500" />
+                      Video Enlace (Solo YouTube o Google Drive Link)
+                    </label>
+                    <input
+                      type="text"
+                      value={transmisionAgenda}
+                      onChange={(e) => setTransmisionAgenda(e.target.value)}
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red/30 text-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-zinc-400 uppercase">Estado Actividad</label>
+                    <select
+                      value={estadoAgenda}
+                      onChange={(e) => setEstadoAgenda(e.target.value as any)}
+                      className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red/30 text-white"
+                    >
+                      <option value="programado">Programado</option>
+                      <option value="concluido">Concluido</option>
+                      <option value="cancelado">Cancelado</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(false)}
+                    className="bg-zinc-800 hover:bg-zinc-700 px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-brand-red text-white hover:bg-brand-red/90 px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider"
+                  >
+                    Guardar Cambios
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-xl">
+                <table className="w-full text-left text-sm text-zinc-300">
+                  <thead className="bg-zinc-950 text-zinc-400 text-xs font-bold uppercase tracking-wider border-b border-zinc-800">
+                    <tr>
+                      <th className="px-6 py-4">Fecha y Hora</th>
+                      <th className="px-6 py-4">Título</th>
+                      <th className="px-6 py-4">Lugar</th>
+                      <th className="px-6 py-4">Sector</th>
+                      <th className="px-6 py-4">Estado</th>
+                      <th className="px-6 py-4 text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-800">
+                    {agenda.map((e) => (
+                      <tr key={e.id} className="hover:bg-zinc-950/40">
+                        <td className="px-6 py-4">{new Date(e.fecha_hora).toLocaleString("es-ES")}</td>
+                        <td className="px-6 py-4 font-bold text-white">{e.titulo}</td>
+                        <td className="px-6 py-4">{e.lugar}</td>
+                        <td className="px-6 py-4">{e.comunidad_sector}</td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                            e.estado === "programado" ? "bg-[#25D366]/10 text-[#25D366]" : e.estado === "concluido" ? "bg-zinc-700 text-zinc-300" : "bg-brand-red/10 text-brand-red"
+                          }`}>
+                            {e.estado}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right space-x-2">
+                          <button
+                            onClick={() => handleEditAgendaClick(e)}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors"
+                          >
+                            <Edit3 className="h-4 w-4 text-brand-gold" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteAgenda(e.id)}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors"
                           >
                             <Trash2 className="h-4 w-4 text-brand-red" />
                           </button>
@@ -371,7 +690,6 @@ export default function AdminDashboardPage() {
             )}
           </div>
         ) : activeTab === "voluntarios" ? (
-          /* Vista Voluntarios Placeholder (Confidencial) */
           <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 text-center space-y-4 max-w-xl mx-auto shadow-xl">
             <Users className="h-12 w-12 text-brand-gold mx-auto" />
             <h3 className="text-xl font-bold">Voluntarios Registrados</h3>
@@ -382,7 +700,6 @@ export default function AdminDashboardPage() {
             </p>
           </div>
         ) : (
-          /* Vista Propuestas Placeholder (Confidencial) */
           <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 text-center space-y-4 max-w-xl mx-auto shadow-xl">
             <HelpCircle className="h-12 w-12 text-brand-gold mx-auto" />
             <h3 className="text-xl font-bold">Propuestas Ciudadanas</h3>
