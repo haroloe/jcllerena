@@ -12,7 +12,6 @@ const NAV_ITEMS = [
   { label: "Propuestas", href: "/#propuestas" },
   { label: "Noticias", href: "/noticias" },
   { label: "Agenda", href: "/agenda" },
-  { label: "Galería", href: "/#galeria" },
   { label: "Participa", href: "/#participa" },
   { label: "Contacto", href: "/#contacto" },
 ];
