@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, Plus, FileText, Calendar, Trash2, Edit3, Users, HelpCircle, Video, Image as ImageIcon } from "lucide-react";
+import { LogOut, Plus, FileText, Calendar, Trash2, Edit3, Users, HelpCircle, Video, Image as ImageIcon, CheckCircle, XCircle, Archive, MessageSquare } from "lucide-react";
 
 interface Noticia {
   id: number;
@@ -29,10 +29,40 @@ interface Evento {
   estado: "programado" | "concluido" | "cancelado";
 }
 
+interface Voluntario {
+  id: number;
+  nombre: string;
+  apellidos: string;
+  telefono: string;
+  email: string;
+  comunidad_sector: string;
+  edad: number | null;
+  profesion_ocupacion: string;
+  forma_participacion: string;
+  disponibilidad: string;
+  comentario: string | null;
+  estado: "pendiente" | "aprobado" | "rechazado";
+  fecha_registro: string;
+}
+
+interface Propuesta {
+  id: number;
+  nombre_completo: string;
+  telefono: string;
+  email: string | null;
+  comunidad_sector: string;
+  categoria: string;
+  descripcion: string;
+  estado: "pendiente" | "tomada_en_cuenta" | "archivada";
+  fecha_envio: string;
+}
+
 export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState<"noticias" | "agenda" | "voluntarios" | "propuestas">("noticias");
   const [noticias, setNoticias] = useState<Noticia[]>([]);
   const [agenda, setAgenda] = useState<Evento[]>([]);
+  const [voluntarios, setVoluntarios] = useState<Voluntario[]>([]);
+  const [propuestas, setPropuestas] = useState<Propuesta[]>([]);
   
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -63,27 +93,43 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [activeTab]);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      // 1. Cargar Noticias
-      const resNoticias = await fetch("/api/admin/noticias");
-      if (resNoticias.status === 401) {
-        router.push("/admin/login");
-        return;
-      }
-      const dataNoticias = await resNoticias.json();
-      if (dataNoticias.success) {
-        setNoticias(dataNoticias.noticias);
-      }
-
-      // 2. Cargar Agenda
-      const resAgenda = await fetch("/api/admin/agenda");
-      const dataAgenda = await resAgenda.json();
-      if (dataAgenda.success) {
-        setAgenda(dataAgenda.agenda);
+      if (activeTab === "noticias") {
+        const res = await fetch("/api/admin/noticias");
+        if (res.status === 401) {
+          router.push("/admin/login");
+          return;
+        }
+        const data = await res.json();
+        if (data.success) setNoticias(data.noticias);
+      } else if (activeTab === "agenda") {
+        const res = await fetch("/api/admin/agenda");
+        if (res.status === 401) {
+          router.push("/admin/login");
+          return;
+        }
+        const data = await res.json();
+        if (data.success) setAgenda(data.agenda);
+      } else if (activeTab === "voluntarios") {
+        const res = await fetch("/api/admin/voluntarios");
+        if (res.status === 401) {
+          router.push("/admin/login");
+          return;
+        }
+        const data = await res.json();
+        if (data.success) setVoluntarios(data.voluntarios);
+      } else if (activeTab === "propuestas") {
+        const res = await fetch("/api/admin/propuestas");
+        if (res.status === 401) {
+          router.push("/admin/login");
+          return;
+        }
+        const data = await res.json();
+        if (data.success) setPropuestas(data.propuestas);
       }
     } catch (err) {
       console.error(err);
@@ -167,12 +213,10 @@ export default function AdminDashboardPage() {
   // CRUD AGENDA
   const handleSaveAgenda = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validar enlaces de video (YouTube / Drive) si se provee
     if (transmisionAgenda) {
       const lower = transmisionAgenda.toLowerCase();
       if (!lower.includes("youtube.com") && !lower.includes("youtu.be") && !lower.includes("drive.google.com")) {
-        alert("Atención: El enlace de video debe ser de YouTube o Google Drive (no archivos locales).");
+        alert("Atención: El enlace de video debe ser de YouTube o Google Drive.");
         return;
       }
     }
@@ -180,7 +224,7 @@ export default function AdminDashboardPage() {
     const payload = {
       id: currentId,
       titulo: tituloAgenda,
-      fecha_hora: fechaHoraAgenda.replace("T", " ") + ":00", // formatear para datetime de MySQL
+      fecha_hora: fechaHoraAgenda.replace("T", " ") + ":00",
       lugar: lugarAgenda,
       comunidad_sector: sectorAgenda,
       descripcion: descripcionAgenda || null,
@@ -224,7 +268,7 @@ export default function AdminDashboardPage() {
   const handleEditAgendaClick = (e: Evento) => {
     setCurrentId(e.id);
     setTituloAgenda(e.titulo);
-    setFechaHoraAgenda(e.fecha_hora.substring(0, 16)); // YYYY-MM-DDTHH:MM
+    setFechaHoraAgenda(e.fecha_hora.substring(0, 16));
     setLugarAgenda(e.lugar);
     setSectorAgenda(e.comunidad_sector);
     setDescripcionAgenda(e.descripcion || "");
@@ -236,10 +280,42 @@ export default function AdminDashboardPage() {
   };
 
   const handleDeleteAgenda = async (id: number) => {
-    if (!confirm("¿Estás seguro de eliminar esta actividad de la agenda?")) return;
+    if (!confirm("¿Estás seguro de eliminar esta actividad?")) return;
     const res = await fetch(`/api/admin/agenda?id=${id}`, { method: "DELETE" });
     if (res.ok) {
-      alert("Actividad de la agenda eliminada.");
+      alert("Actividad eliminada.");
+      loadData();
+    } else {
+      const data = await res.json();
+      alert(data.error);
+    }
+  };
+
+  // CONTROL VOLUNTARIOS (APROBAR / RECHAZAR)
+  const handleUpdateVoluntarioStatus = async (id: number, nuevoEstado: "aprobado" | "rechazado" | "pendiente") => {
+    const res = await fetch("/api/admin/voluntarios", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, estado: nuevoEstado }),
+    });
+    if (res.ok) {
+      alert("Estado de voluntario actualizado.");
+      loadData();
+    } else {
+      const data = await res.json();
+      alert(data.error);
+    }
+  };
+
+  // CONTROL PROPUESTAS (TOMAR EN CUENTA / ARCHIVAR)
+  const handleUpdatePropuestaStatus = async (id: number, nuevoEstado: "tomada_en_cuenta" | "archivada" | "pendiente") => {
+    const res = await fetch("/api/admin/propuestas", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, estado: nuevoEstado }),
+    });
+    if (res.ok) {
+      alert("Estado de la propuesta actualizado.");
       loadData();
     } else {
       const data = await res.json();
@@ -293,7 +369,7 @@ export default function AdminDashboardPage() {
           }`}
         >
           <Users className="h-4 w-4" />
-          Voluntarios
+          Voluntarios ({voluntarios.length})
         </button>
         <button
           onClick={() => { setActiveTab("propuestas"); setIsEditing(false); }}
@@ -302,7 +378,7 @@ export default function AdminDashboardPage() {
           }`}
         >
           <HelpCircle className="h-4 w-4" />
-          Propuestas
+          Propuestas ({propuestas.length})
         </button>
       </div>
 
@@ -482,7 +558,6 @@ export default function AdminDashboardPage() {
             )}
           </div>
         ) : activeTab === "agenda" ? (
-          /* CRUD AGENDA */
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-bold">Agenda de Actividades de Campaña</h2>
@@ -510,7 +585,6 @@ export default function AdminDashboardPage() {
                     required
                     value={tituloAgenda}
                     onChange={(e) => setTituloAgenda(e.target.value)}
-                    placeholder="Ej. Encuentro Vecinal en Vizcacuto"
                     className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red/30 text-white"
                   />
                 </div>
@@ -556,29 +630,26 @@ export default function AdminDashboardPage() {
                       required
                       value={lugarAgenda}
                       onChange={(e) => setLugarAgenda(e.target.value)}
-                      placeholder="Ej. Plaza Principal de Vizcacuto s/n"
                       className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red/30 text-white"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="block text-xs font-bold text-zinc-400 uppercase">Enlace Mapa Google Maps (Ubicación)</label>
+                    <label className="block text-xs font-bold text-zinc-400 uppercase">Enlace Mapa Google Maps</label>
                     <input
                       type="text"
                       value={ubicacionAgenda}
                       onChange={(e) => setUbicacionAgenda(e.target.value)}
-                      placeholder="URL del mapa"
                       className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red/30 text-white"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-zinc-400 uppercase">Descripción / Detalles de Actividad</label>
+                  <label className="block text-xs font-bold text-zinc-400 uppercase">Descripción</label>
                   <textarea
                     rows={3}
                     value={descripcionAgenda}
                     onChange={(e) => setDescripcionAgenda(e.target.value)}
-                    placeholder="Detalles sobre la mesa de trabajo o agenda del evento..."
                     className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red/30 text-white"
                   />
                 </div>
@@ -601,7 +672,7 @@ export default function AdminDashboardPage() {
                   <div className="space-y-1">
                     <label className="block text-xs font-bold text-zinc-400 uppercase flex items-center gap-1.5">
                       <Video className="h-4 w-4 text-zinc-500" />
-                      Video Enlace (Solo YouTube o Google Drive Link)
+                      Video Enlace (YouTube o Google Drive Link)
                     </label>
                     <input
                       type="text"
@@ -690,24 +761,133 @@ export default function AdminDashboardPage() {
             )}
           </div>
         ) : activeTab === "voluntarios" ? (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 text-center space-y-4 max-w-xl mx-auto shadow-xl">
-            <Users className="h-12 w-12 text-brand-gold mx-auto" />
-            <h3 className="text-xl font-bold">Voluntarios Registrados</h3>
-            <p className="text-zinc-400 text-sm leading-relaxed">
-              La lista de voluntarios y colaboradores contiene datos confidenciales protegidos por ley. 
-              Puedes descargar y consultar el reporte completo de la base de datos de Hostinger de manera segura 
-              desde phpMyAdmin usando tus credenciales de administrador.
-            </p>
+          /* TABLA VOLUNTARIOS REALES */
+          <div className="space-y-6">
+            <h2 className="text-xl font-bold">Registro de Voluntarios de Campaña</h2>
+            
+            <div className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-xl">
+              <table className="w-full text-left text-sm text-zinc-300">
+                <thead className="bg-zinc-950 text-zinc-400 text-xs font-bold uppercase tracking-wider border-b border-zinc-800">
+                  <tr>
+                    <th className="px-6 py-4">Nombre y Apellidos</th>
+                    <th className="px-6 py-4">Teléfono / Email</th>
+                    <th className="px-6 py-4">Sector</th>
+                    <th className="px-6 py-4">Forma Participación</th>
+                    <th className="px-6 py-4">Disponibilidad</th>
+                    <th className="px-6 py-4">Estado</th>
+                    <th className="px-6 py-4 text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-800">
+                  {voluntarios.map((v) => (
+                    <tr key={v.id} className="hover:bg-zinc-950/40">
+                      <td className="px-6 py-4 font-bold text-white">
+                        {v.nombre} {v.apellidos}
+                        {v.edad && <span className="text-zinc-500 font-normal text-xs ml-1">({v.edad} años)</span>}
+                        <div className="text-zinc-500 font-normal text-[10px] mt-0.5">Ocupación: {v.profesion_ocupacion}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="font-semibold text-white">{v.telefono}</div>
+                        <div className="text-xs text-zinc-500">{v.email}</div>
+                      </td>
+                      <td className="px-6 py-4">{v.comunidad_sector}</td>
+                      <td className="px-6 py-4 font-medium text-brand-gold">{v.forma_participacion}</td>
+                      <td className="px-6 py-4 text-xs">{v.disponibilidad}</td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                          v.estado === "aprobado"
+                            ? "bg-[#25D366]/10 text-[#25D366]"
+                            : v.estado === "rechazado"
+                            ? "bg-brand-red/10 text-brand-red"
+                            : "bg-amber-500/10 text-amber-500"
+                        }`}>
+                          {v.estado}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right space-x-1.5 whitespace-nowrap">
+                        <button
+                          onClick={() => handleUpdateVoluntarioStatus(v.id, "aprobado")}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[#25D366]/10 hover:bg-[#25D366]/20 transition-colors"
+                          title="Aceptar Voluntario"
+                        >
+                          <CheckCircle className="h-4 w-4 text-[#25D366]" />
+                        </button>
+                        <button
+                          onClick={() => handleUpdateVoluntarioStatus(v.id, "rechazado")}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-red/10 hover:bg-brand-red/20 transition-colors"
+                          title="Rechazar"
+                        >
+                          <XCircle className="h-4 w-4 text-brand-red" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         ) : (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 text-center space-y-4 max-w-xl mx-auto shadow-xl">
-            <HelpCircle className="h-12 w-12 text-brand-gold mx-auto" />
-            <h3 className="text-xl font-bold">Propuestas Ciudadanas</h3>
-            <p className="text-zinc-400 text-sm leading-relaxed">
-              Los aportes, sugerencias e información de contacto enviados por los vecinos se almacenan cifrados 
-              en la base de datos en Hostinger. Puedes revisar la bandeja completa de manera privada ingresando 
-              a tu gestor de base de datos MySQL.
-            </p>
+          /* TABLA PROPUESTAS REALES */
+          <div className="space-y-6">
+            <h2 className="text-xl font-bold">Propuestas y Necesidades de los Vecinos</h2>
+            
+            <div className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-xl">
+              <table className="w-full text-left text-sm text-zinc-300">
+                <thead className="bg-zinc-950 text-zinc-400 text-xs font-bold uppercase tracking-wider border-b border-zinc-800">
+                  <tr>
+                    <th className="px-6 py-4">Vecino / Contacto</th>
+                    <th className="px-6 py-4">Sector</th>
+                    <th className="px-6 py-4">Categoría Eje</th>
+                    <th className="px-6 py-4">Descripción Propuesta</th>
+                    <th className="px-6 py-4">Estado</th>
+                    <th className="px-6 py-4 text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-800">
+                  {propuestas.map((p) => (
+                    <tr key={p.id} className="hover:bg-zinc-950/40">
+                      <td className="px-6 py-4 font-bold text-white whitespace-nowrap">
+                        {p.nombre_completo}
+                        <div className="text-zinc-500 font-semibold text-xs mt-0.5">{p.telefono}</div>
+                        <div className="text-[10px] text-zinc-600 font-normal">{p.email || "Sin email"}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">{p.comunidad_sector}</td>
+                      <td className="px-6 py-4 font-medium text-brand-gold whitespace-nowrap">{p.categoria}</td>
+                      <td className="px-6 py-4 max-w-xs">
+                        <p className="text-xs leading-relaxed text-zinc-350 break-words">{p.descripcion}</p>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                          p.estado === "tomada_en_cuenta"
+                            ? "bg-[#25D366]/10 text-[#25D366]"
+                            : p.estado === "archivada"
+                            ? "bg-zinc-700 text-zinc-400"
+                            : "bg-amber-500/10 text-amber-500"
+                        }`}>
+                          {p.estado === "tomada_en_cuenta" ? "Tomada en Cuenta" : p.estado === "archivada" ? "Archivada" : "Pendiente"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right space-x-1.5 whitespace-nowrap">
+                        <button
+                          onClick={() => handleUpdatePropuestaStatus(p.id, "tomada_en_cuenta")}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[#25D366]/10 hover:bg-[#25D366]/20 transition-colors"
+                          title="Tomar en Cuenta"
+                        >
+                          <CheckCircle className="h-4 w-4 text-[#25D366]" />
+                        </button>
+                        <button
+                          onClick={() => handleUpdatePropuestaStatus(p.id, "archivada")}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors"
+                          title="Archivar"
+                        >
+                          <Archive className="h-4 w-4 text-zinc-450" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>
