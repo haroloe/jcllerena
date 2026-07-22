@@ -9,7 +9,6 @@ const NAV_ITEMS = [
   { label: "Experiencia", href: "#experiencia" },
   { label: "Visión 2030", href: "#vision" },
   { label: "Propuestas", href: "#propuestas" },
-  { label: "Plan de Gobierno", href: "#plan" },
   { label: "Noticias", href: "#noticias" },
   { label: "Agenda", href: "#agenda" },
   { label: "Galería", href: "#galeria" },
