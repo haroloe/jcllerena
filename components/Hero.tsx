@@ -1,10 +1,25 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { FileText, Users, ArrowDown, ChevronRight, MessageSquare } from "lucide-react";
 
+const BACKGROUND_IMAGES = [
+  "/media__1784907150719.png", // Municipalidad y Plaza
+  "/media__1784907158570.png", // Paisaje natural con lechuza y montañas nevadas
+  "/media__1784907162679.jpg", // Laguna de Orcopampa
+];
+
 export default function Hero() {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % BACKGROUND_IMAGES.length);
+    }, 6000); // Cambia de imagen cada 6 segundos
+    return () => clearInterval(timer);
+  }, []);
+
   const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER;
   const facebookUrl = process.env.NEXT_PUBLIC_FACEBOOK_URL;
   const instagramUrl = process.env.NEXT_PUBLIC_INSTAGRAM_URL;
@@ -20,13 +35,29 @@ export default function Hero() {
   return (
     <section 
       id="inicio" 
-      className="relative min-h-screen flex items-center justify-center pt-24 pb-16 overflow-hidden bg-gradient-to-br from-brand-dark via-brand-dark/95 to-[#121212] text-white"
+      className="relative min-h-screen flex items-center justify-center pt-24 pb-16 overflow-hidden bg-brand-dark text-white"
     >
-      {/* Elementos decorativos de fondo (Glows y patrones) */}
-      <div className="absolute inset-0 z-0 opacity-40">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-red/20 rounded-full filter blur-[100px] animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-brand-gold/15 rounded-full filter blur-[120px] animate-pulse"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white/5 via-transparent to-transparent"></div>
+      {/* Carrusel de fondo dinámico con desvanecimiento suave */}
+      <div className="absolute inset-0 z-0">
+        {BACKGROUND_IMAGES.map((src, index) => (
+          <div
+            key={src}
+            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+              index === currentImageIndex ? "opacity-100 scale-100" : "opacity-0 scale-105"
+            } transform transition-transform duration-[6000ms]`}
+          >
+            <Image
+              src={src}
+              alt={`Paisaje de Orcopampa ${index + 1}`}
+              fill
+              priority={index === 0}
+              className="object-cover object-center"
+            />
+          </div>
+        ))}
+        {/* Overlay oscuro y degradado de color para legibilidad extrema y estética premium */}
+        <div className="absolute inset-0 bg-gradient-to-t from-brand-dark via-brand-dark/85 to-brand-dark/70 z-[1]"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-brand-dark/50 to-brand-dark/90 z-[1]"></div>
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
@@ -78,7 +109,7 @@ export default function Hero() {
             {/* Lema Principal y descripción */}
             <div className="space-y-4 max-w-2xl">
               <h2 className="text-2xl md:text-3xl font-extrabold tracking-wide text-white">
-                “{process.env.NEXT_PUBLIC_LEMA || "GESTIÓN Y DESARROLLO"}”
+                “{process.env.NEXT_PUBLIC_LEMA || "OBRAS QUE QUEDAN, CORAZÓN QUE NO SE OLVIDA"}”
               </h2>
               <p className="text-white/70 text-sm md:text-base leading-relaxed">
                 Un plan de gobierno técnico, inclusivo y transparente diseñado para responder con obras reales, 
