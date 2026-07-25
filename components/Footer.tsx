@@ -88,7 +88,7 @@ export default function Footer() {
             <ul className="space-y-2 text-xs md:text-sm text-white/75">
               <li className="flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-brand-red flex-shrink-0" />
-                <span>Local Central: Plaza de Armas s/n, Orcopampa</span>
+                <span>Local Central: Calle Mariano melgar S/N la laguna entrada a parque la laguna, Orcopampa, Peru, 040509</span>
               </li>
               <li className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-brand-red flex-shrink-0" />
