@@ -10,7 +10,7 @@ interface WhatsAppButtonProps {
 export default function WhatsAppButton({ 
   message = "Hola, deseo recibir información sobre las propuestas de Juan Carlos Llerena para Orcopampa." 
 }: WhatsAppButtonProps) {
-  const phoneNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER;
+  const phoneNumber = "51927586733";
 
   if (!phoneNumber) {
     return null;
