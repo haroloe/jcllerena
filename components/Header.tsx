@@ -42,7 +42,7 @@ export default function Header() {
     <header
       className={`fixed top-0 left-0 w-full z-45 transition-all duration-300 ${
         isScrolled || !isHome
-          ? "bg-brand-dark/98 backdrop-blur-md shadow-md py-3 border-b border-white/5" 
+          ? "bg-white/95 backdrop-blur-md shadow-md py-3 border-b border-gray-200/60" 
           : "bg-transparent py-5"
       }`}
     >
@@ -56,10 +56,10 @@ export default function Header() {
                 JC
               </div>
               <div className="flex flex-col">
-                <span className="text-white font-extrabold text-lg tracking-wide leading-none group-hover:text-brand-gold transition-colors">
+                <span className="text-brand-dark font-extrabold text-lg tracking-wide leading-none group-hover:text-brand-red transition-colors">
                   JUAN CARLOS
                 </span>
-                <span className="text-brand-gold font-bold text-xs tracking-widest">
+                <span className="text-[#9B7A00] font-bold text-xs tracking-widest">
                   LLERENA
                 </span>
               </div>
@@ -72,7 +72,7 @@ export default function Header() {
               <a
                 key={item.label}
                 href={item.href}
-                className="text-white/90 hover:text-brand-gold hover:bg-white/5 px-2.5 py-2 rounded-md text-xs xl:text-sm font-semibold tracking-wide transition-all duration-200"
+                className="text-brand-dark hover:text-brand-red hover:bg-brand-dark/5 px-2.5 py-2 rounded-md text-xs xl:text-sm font-bold tracking-wide transition-all duration-200"
               >
                 {item.label}
               </a>
@@ -86,7 +86,7 @@ export default function Header() {
                 href={facebookUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-white/80 hover:text-brand-gold transition-colors"
+                className="text-brand-dark/80 hover:text-brand-red transition-colors"
                 aria-label="Facebook Oficial"
               >
                 <Facebook className="h-5 w-5" />
@@ -97,7 +97,7 @@ export default function Header() {
                 href={instagramUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-white/80 hover:text-brand-gold transition-colors"
+                className="text-brand-dark/80 hover:text-brand-red transition-colors"
                 aria-label="Instagram Oficial"
               >
                 <Instagram className="h-5 w-5" />
@@ -108,7 +108,7 @@ export default function Header() {
                 href={tiktokUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-white/80 hover:text-brand-gold font-bold transition-colors text-sm"
+                className="text-brand-dark/80 hover:text-brand-red font-bold transition-colors text-sm"
                 aria-label="TikTok Oficial"
               >
                 T
@@ -116,7 +116,7 @@ export default function Header() {
             )}
             <a
               href="#participa"
-              className="bg-brand-red text-white hover:bg-brand-red/90 border border-brand-gold/50 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow hover:scale-105"
+              className="bg-brand-red text-white hover:bg-brand-red/90 border border-[#9B7A00]/50 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow hover:scale-105"
             >
               Súmate
             </a>
@@ -126,7 +126,7 @@ export default function Header() {
           <div className="lg:hidden flex items-center">
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-md text-white hover:text-brand-gold focus:outline-none"
+              className="inline-flex items-center justify-center p-2 rounded-md text-brand-dark hover:text-brand-red focus:outline-none"
               aria-expanded={isOpen}
               aria-label="Abrir menú"
             >
@@ -139,7 +139,7 @@ export default function Header() {
       {/* Menú móvil desplegable */}
       <div
         className={`lg:hidden transition-all duration-300 ease-in-out ${
-          isOpen ? "max-h-screen opacity-100 py-4 bg-brand-dark/95 backdrop-blur-lg border-b border-brand-gold/20" : "max-h-0 opacity-0 overflow-hidden"
+          isOpen ? "max-h-screen opacity-100 py-4 bg-white/98 backdrop-blur-lg border-b border-gray-200" : "max-h-0 opacity-0 overflow-hidden"
         }`}
       >
         <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 text-center">
@@ -148,18 +148,18 @@ export default function Header() {
               key={item.label}
               href={item.href}
               onClick={() => setIsOpen(false)}
-              className="block text-white hover:text-brand-gold hover:bg-white/5 px-3 py-3 rounded-md text-base font-semibold transition-colors"
+              className="block text-brand-dark hover:text-brand-red hover:bg-brand-dark/5 px-3 py-3 rounded-md text-base font-bold transition-colors"
             >
               {item.label}
             </a>
           ))}
-          <div className="pt-4 flex items-center justify-center gap-6 border-t border-white/10 mt-4">
+          <div className="pt-4 flex items-center justify-center gap-6 border-t border-gray-200 mt-4">
             {facebookUrl && (
               <a
                 href={facebookUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-white hover:text-brand-gold"
+                className="text-brand-dark hover:text-brand-red"
                 aria-label="Facebook"
               >
                 <Facebook className="h-6 w-6" />
@@ -170,7 +170,7 @@ export default function Header() {
                 href={instagramUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-white hover:text-brand-gold"
+                className="text-brand-dark hover:text-brand-red"
                 aria-label="Instagram"
               >
                 <Instagram className="h-6 w-6" />
@@ -179,7 +179,7 @@ export default function Header() {
             <a
               href="#participa"
               onClick={() => setIsOpen(false)}
-              className="bg-brand-red text-white hover:bg-brand-red/90 border border-brand-gold px-6 py-2.5 rounded-full text-sm font-bold uppercase tracking-wider shadow"
+              className="bg-brand-red text-white hover:bg-brand-red/90 border border-[#9B7A00] px-6 py-2.5 rounded-full text-sm font-bold uppercase tracking-wider shadow"
             >
               Súmate al Equipo
             </a>
