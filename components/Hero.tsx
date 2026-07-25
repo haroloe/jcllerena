@@ -20,10 +20,10 @@ export default function Hero() {
     return () => clearInterval(timer);
   }, []);
 
-  const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "51927586733";
-  const facebookUrl = process.env.NEXT_PUBLIC_FACEBOOK_URL || "https://www.facebook.com/profile.php?id=61592073647387";
-  const instagramUrl = process.env.NEXT_PUBLIC_INSTAGRAM_URL || "https://www.instagram.com/juancarlosllerenah/";
-  const tiktokUrl = process.env.NEXT_PUBLIC_TIKTOK_URL || "https://www.tiktok.com/@juancarlosllerenahuamani";
+  const whatsappNumber = "51927586733";
+  const facebookUrl = "https://www.facebook.com/profile.php?id=61592073647387";
+  const instagramUrl = "https://www.instagram.com/juancarlosllerenah/";
+  const tiktokUrl = "https://www.tiktok.com/@juancarlosllerenahuamani";
 
   const whatsappMessage = encodeURIComponent(
     "Hola, deseo recibir información sobre las propuestas de Juan Carlos Llerena para Orcopampa."
