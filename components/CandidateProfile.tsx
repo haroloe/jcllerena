@@ -85,7 +85,7 @@ export default function CandidateProfile() {
           {/* Columna Derecha: Imagen Artística o Composición */}
           <div className="relative aspect-video lg:aspect-square w-full max-w-[500px] mx-auto rounded-2xl overflow-hidden shadow-xl border border-gray-200 bg-gray-100">
             <img
-              src="/FOTOS/foto2.jpeg"
+              src="/perfil_de_facebook2.png"
               alt="Juan Carlos Llerena con la comunidad"
               className="object-cover w-full h-full object-center hover:scale-105 transition-transform duration-500"
               onError={(e) => {
