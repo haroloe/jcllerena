@@ -12,9 +12,19 @@ interface Noticia {
   resumen: string;
   contenido: string;
   imagen_principal: string | null;
+  tipo_medio: "foto" | "video";
+  video_url: string | null;
   fecha: string;
   autor: string;
   categoria: string;
+}
+
+// Helper to extract YouTube Video ID
+function getYouTubeId(url: string | null) {
+  if (!url) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
 }
 
 export default function NoticiasPage() {
@@ -81,16 +91,37 @@ export default function NoticiasPage() {
                   className="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow group"
                 >
                   <div className="space-y-4">
-                    {/* Imagen principal (Placeholder si es null) */}
+                    {/* Imagen principal (Placeholder o miniatura de YouTube si es video) */}
                     <div className="relative aspect-video w-full bg-gray-100 overflow-hidden">
-                      <img
-                        src={item.imagen_principal || "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&q=80&w=600"}
-                        alt={item.titulo}
-                        className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
-                        onError={(e) => {
-                          (e.target as any).src = "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&q=80&w=600";
-                        }}
-                      />
+                      {item.tipo_medio === "video" && item.video_url ? (
+                        <>
+                          <img
+                            src={`https://img.youtube.com/vi/${getYouTubeId(item.video_url)}/hqdefault.jpg`}
+                            alt={item.titulo}
+                            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
+                            onError={(e) => {
+                              (e.target as any).src = "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&q=80&w=600";
+                            }}
+                          />
+                          {/* Play Button Overlay */}
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/25 group-hover:bg-black/35 transition-colors">
+                            <div className="bg-brand-red text-white p-3 rounded-full shadow-lg scale-100 group-hover:scale-110 transition-transform">
+                              <svg className="w-5 h-5 fill-current ml-0.5" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z" />
+                              </svg>
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <img
+                          src={item.imagen_principal || "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&q=80&w=600"}
+                          alt={item.titulo}
+                          className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
+                          onError={(e) => {
+                            (e.target as any).src = "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&q=80&w=600";
+                          }}
+                        />
+                      )}
                     </div>
 
                     {/* Metadata */}

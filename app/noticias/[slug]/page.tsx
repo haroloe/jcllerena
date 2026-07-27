@@ -12,6 +12,8 @@ interface Noticia {
   resumen: string;
   contenido: string;
   imagen_principal: string | null;
+  tipo_medio: "foto" | "video";
+  video_url: string | null;
   fecha: string;
   autor: string;
   categoria: string;
@@ -19,6 +21,15 @@ interface Noticia {
 
 interface PageProps {
   params: Promise<{ slug: string }>;
+}
+
+// Helper to extract YouTube video ID and build embed URL
+function getYouTubeEmbedUrl(url: string | null) {
+  if (!url) return "";
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  const videoId = (match && match[2].length === 11) ? match[2] : null;
+  return videoId ? `https://www.youtube.com/embed/${videoId}` : "";
 }
 
 export default async function NoticiaDetailPage({ params }: PageProps) {
@@ -51,15 +62,29 @@ export default async function NoticiaDetailPage({ params }: PageProps) {
 
           {/* Tarjeta del Artículo */}
           <article className="bg-white rounded-3xl border border-gray-200 shadow-xl overflow-hidden">
-            {/* Imagen Principal */}
-            {noticia.imagen_principal && (
-              <div className="relative aspect-video w-full bg-gray-100 border-b border-gray-200">
-                <img
-                  src={noticia.imagen_principal}
-                  alt={noticia.titulo}
-                  className="object-cover w-full h-full"
-                />
+            {/* Imagen Principal o Video de YouTube */}
+            {noticia.tipo_medio === "video" && noticia.video_url ? (
+              <div className="relative aspect-video w-full bg-black border-b border-gray-200">
+                <iframe
+                  className="absolute inset-0 w-full h-full"
+                  src={getYouTubeEmbedUrl(noticia.video_url)}
+                  title={noticia.titulo}
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  allowFullScreen
+                ></iframe>
               </div>
+            ) : (
+              noticia.imagen_principal && (
+                <div className="relative aspect-video w-full bg-gray-100 border-b border-gray-200">
+                  <img
+                    src={noticia.imagen_principal}
+                    alt={noticia.titulo}
+                    className="object-cover w-full h-full"
+                  />
+                </div>
+              )
             )}
 
             <div className="p-8 space-y-6">

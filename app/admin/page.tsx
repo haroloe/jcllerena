@@ -10,6 +10,8 @@ interface Noticia {
   resumen: string;
   contenido: string;
   imagen_principal: string | null;
+  tipo_medio: "foto" | "video";
+  video_url: string | null;
   fecha: string;
   autor: string;
   categoria: string;
@@ -87,6 +89,8 @@ export default function AdminDashboardPage() {
   const [categoriaNoticia, setCategoriaNoticia] = useState("Campaña");
   const [fechaNoticia, setFechaNoticia] = useState("");
   const [imagenNoticia, setImagenNoticia] = useState("");
+  const [tipoMedioNoticia, setTipoMedioNoticia] = useState<"foto" | "video">("foto");
+  const [videoUrlNoticia, setVideoUrlNoticia] = useState("");
   const [estadoNoticia, setEstadoNoticia] = useState<"borrador" | "publicado">("borrador");
 
   // Estados para Formulario de Agenda
@@ -170,6 +174,19 @@ export default function AdminDashboardPage() {
   // CRUD NOTICIAS
   const handleSaveNoticia = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (tipoMedioNoticia === "video") {
+      if (!videoUrlNoticia) {
+        alert("Por favor ingresa el enlace de YouTube.");
+        return;
+      }
+      const lower = videoUrlNoticia.toLowerCase();
+      if (!lower.includes("youtube.com") && !lower.includes("youtu.be")) {
+        alert("El video debe ser un enlace válido de YouTube.");
+        return;
+      }
+    }
+
     const payload = {
       id: currentId,
       titulo: tituloNoticia,
@@ -177,7 +194,9 @@ export default function AdminDashboardPage() {
       contenido: contenidoNoticia,
       fecha: fechaNoticia,
       categoria: categoriaNoticia,
-      imagen_principal: imagenNoticia || null,
+      imagen_principal: tipoMedioNoticia === "foto" ? (imagenNoticia || null) : null,
+      tipo_medio: tipoMedioNoticia,
+      video_url: tipoMedioNoticia === "video" ? (videoUrlNoticia || null) : null,
       estado: estadoNoticia,
     };
 
@@ -207,6 +226,8 @@ export default function AdminDashboardPage() {
     setCategoriaNoticia("Campaña");
     setFechaNoticia("");
     setImagenNoticia("");
+    setTipoMedioNoticia("foto");
+    setVideoUrlNoticia("");
     setEstadoNoticia("borrador");
   };
 
@@ -218,6 +239,8 @@ export default function AdminDashboardPage() {
     setCategoriaNoticia(n.categoria);
     setFechaNoticia(n.fecha.substring(0, 10));
     setImagenNoticia(n.imagen_principal || "");
+    setTipoMedioNoticia(n.tipo_medio || "foto");
+    setVideoUrlNoticia(n.video_url || "");
     setEstadoNoticia(n.estado);
     setIsEditing(true);
   };
@@ -533,18 +556,49 @@ export default function AdminDashboardPage() {
                   />
                 </div>
 
-                <div className="space-y-1">
-                  <label className="block text-xs font-bold text-zinc-400 uppercase">Ruta / Enlace Imagen Principal</label>
-                  <div className="relative">
-                    <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-                    <input
-                      type="text"
-                      value={imagenNoticia}
-                      onChange={(e) => setImagenNoticia(e.target.value)}
-                      placeholder="/FOTOS/foto1.jpeg o URL externa"
-                      className="w-full pl-10 pr-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red/30 text-white"
-                    />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-zinc-400 uppercase">Tipo de Recurso</label>
+                    <select
+                      value={tipoMedioNoticia}
+                      onChange={(e) => setTipoMedioNoticia(e.target.value as any)}
+                      className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red/30 text-white"
+                    >
+                      <option value="foto">Foto Principal</option>
+                      <option value="video">Video de YouTube</option>
+                    </select>
                   </div>
+
+                  {tipoMedioNoticia === "foto" ? (
+                    <div className="space-y-1">
+                      <label className="block text-xs font-bold text-zinc-400 uppercase">Ruta / Enlace Imagen Principal</label>
+                      <div className="relative">
+                        <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                        <input
+                          type="text"
+                          value={imagenNoticia}
+                          onChange={(e) => setImagenNoticia(e.target.value)}
+                          placeholder="/FOTOS/foto1.jpeg o URL externa"
+                          className="w-full pl-10 pr-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red/30 text-white"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <label className="block text-xs font-bold text-zinc-400 uppercase">Enlace de Video de YouTube</label>
+                      <div className="relative">
+                        <Video className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                        <input
+                          type="text"
+                          required
+                          value={videoUrlNoticia}
+                          onChange={(e) => setVideoUrlNoticia(e.target.value)}
+                          placeholder="https://www.youtube.com/watch?v=..."
+                          className="w-full pl-10 pr-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red/30 text-white"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

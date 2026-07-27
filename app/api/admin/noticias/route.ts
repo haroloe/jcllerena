@@ -27,6 +27,13 @@ export async function GET() {
   }
 }
 
+// Helper to validate YouTube URL
+function isYouTubeUrl(url: string) {
+  if (!url) return false;
+  const regExp = /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=|embed\/|shorts\/)?([a-zA-Z0-9_-]{11})/;
+  return regExp.test(url);
+}
+
 // POST: Crear una nueva noticia (con flujo de aprobación)
 export async function POST(request: Request) {
   const user = await checkAuth();
@@ -36,10 +43,16 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { titulo, resumen, contenido, imagen_principal, fecha, categoria, estado } = body;
+    const { titulo, resumen, contenido, imagen_principal, tipo_medio, video_url, fecha, categoria, estado } = body;
 
     if (!titulo || !resumen || !contenido || !fecha || !categoria) {
       return NextResponse.json({ error: "Todos los campos obligatorios deben ser completados." }, { status: 400 });
+    }
+
+    if (tipo_medio === "video") {
+      if (!video_url || !isYouTubeUrl(video_url)) {
+        return NextResponse.json({ error: "Para publicaciones de video, se requiere una URL válida de YouTube." }, { status: 400 });
+      }
     }
 
     const url_slug = titulo
@@ -57,8 +70,8 @@ export async function POST(request: Request) {
       : "borrador";
 
     const sql = `
-      INSERT INTO noticias (titulo, url_slug, resumen, contenido, imagen_principal, fecha, autor, categoria, estado)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO noticias (titulo, url_slug, resumen, contenido, imagen_principal, tipo_medio, video_url, fecha, autor, categoria, estado)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const values = [
@@ -66,7 +79,9 @@ export async function POST(request: Request) {
       url_slug,
       resumen.trim(),
       contenido.trim(),
-      imagen_principal || null,
+      tipo_medio === "foto" ? (imagen_principal || null) : null,
+      tipo_medio || "foto",
+      tipo_medio === "video" ? video_url : null,
       fecha,
       user.nombre,
       categoria,
@@ -98,10 +113,16 @@ export async function PUT(request: Request) {
 
   try {
     const body = await request.json();
-    const { id, titulo, resumen, contenido, imagen_principal, fecha, categoria, estado } = body;
+    const { id, titulo, resumen, contenido, imagen_principal, tipo_medio, video_url, fecha, categoria, estado } = body;
 
     if (!id || !titulo || !resumen || !contenido || !fecha || !categoria) {
       return NextResponse.json({ error: "Datos insuficientes para actualizar." }, { status: 400 });
+    }
+
+    if (tipo_medio === "video") {
+      if (!video_url || !isYouTubeUrl(video_url)) {
+        return NextResponse.json({ error: "Para publicaciones de video, se requiere una URL válida de YouTube." }, { status: 400 });
+      }
     }
 
     const url_slug = titulo
@@ -120,7 +141,7 @@ export async function PUT(request: Request) {
 
     const sql = `
       UPDATE noticias 
-      SET titulo = ?, url_slug = ?, resumen = ?, contenido = ?, imagen_principal = ?, fecha = ?, categoria = ?, estado = ?
+      SET titulo = ?, url_slug = ?, resumen = ?, contenido = ?, imagen_principal = ?, tipo_medio = ?, video_url = ?, fecha = ?, categoria = ?, estado = ?
       WHERE id = ?
     `;
 
@@ -129,7 +150,9 @@ export async function PUT(request: Request) {
       url_slug,
       resumen.trim(),
       contenido.trim(),
-      imagen_principal || null,
+      tipo_medio === "foto" ? (imagen_principal || null) : null,
+      tipo_medio || "foto",
+      tipo_medio === "video" ? video_url : null,
       fecha,
       categoria,
       finalEstado,
