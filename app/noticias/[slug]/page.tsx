@@ -120,7 +120,7 @@ export default async function NoticiaDetailPage({ params }: PageProps) {
 
               {/* Contenido HTML */}
               <div 
-                className="prose prose-sm md:prose-base max-w-none text-gray-700 leading-relaxed space-y-4"
+                className={`prose prose-sm md:prose-base max-w-none text-gray-700 leading-relaxed space-y-4 ${noticia.tipo_medio === 'video' ? '[&_.candidate-video]:hidden' : ''}`}
                 dangerouslySetInnerHTML={{ __html: noticia.contenido }}
               />
             </div>
