@@ -25,11 +25,11 @@ interface PageProps {
 
 // Helper to extract YouTube video ID and build embed URL
 function getYouTubeEmbedUrl(url: string | null) {
-  if (!url) return "";
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  if (!url) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
   const match = url.match(regExp);
   const videoId = (match && match[2].length === 11) ? match[2] : null;
-  return videoId ? `https://www.youtube.com/embed/${videoId}` : "";
+  return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
 }
 
 export default async function NoticiaDetailPage({ params }: PageProps) {
@@ -44,6 +44,8 @@ export default async function NoticiaDetailPage({ params }: PageProps) {
   }
 
   const noticia = noticias[0];
+
+  const embedUrl = getYouTubeEmbedUrl(noticia.video_url);
 
   return (
     <>
@@ -63,11 +65,11 @@ export default async function NoticiaDetailPage({ params }: PageProps) {
           {/* Tarjeta del Artículo */}
           <article className="bg-white rounded-3xl border border-gray-200 shadow-xl overflow-hidden">
             {/* Imagen Principal o Video de YouTube */}
-            {noticia.tipo_medio === "video" && noticia.video_url ? (
+            {noticia.tipo_medio === "video" && embedUrl ? (
               <div className="relative aspect-video w-full bg-black border-b border-gray-200">
                 <iframe
                   className="absolute inset-0 w-full h-full"
-                  src={getYouTubeEmbedUrl(noticia.video_url)}
+                  src={embedUrl}
                   title={noticia.titulo}
                   frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
