@@ -57,7 +57,7 @@ CREATE TABLE `noticias` (
   `url_slug` VARCHAR(255) NOT NULL UNIQUE,
   `resumen` TEXT NOT NULL,
   `contenido` LONGTEXT NOT NULL,
-  `imagen_principal` VARCHAR(255) DEFAULT NULL,
+  `imagen_principal` MEDIUMTEXT DEFAULT NULL,
   `tipo_medio` ENUM('foto', 'video') NOT NULL DEFAULT 'foto',
   `video_url` VARCHAR(255) DEFAULT NULL,
   `fecha` DATE NOT NULL,

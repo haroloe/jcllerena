@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
-import fs from "fs";
-import path from "path";
 
 // Helper to check authentication
 async function checkAuth() {
@@ -26,29 +24,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No se encontró ningún archivo para subir." }, { status: 400 });
     }
 
-    // Convert file Blob to Buffer
-    const buffer = Buffer.from(await file.arrayBuffer());
+    // Convert file to Base64 Data URL
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const mimeType = file.type || "image/png";
+    const base64Data = buffer.toString("base64");
     
-    // Create unique filename
-    const originalName = (file as any).name || "image.png";
-    const extension = path.extname(originalName) || ".png";
-    const cleanFilename = `upload_${Date.now()}${extension}`;
+    // Create base64 data URL
+    const dataUrl = `data:${mimeType};base64,${base64Data}`;
 
-    // Target directory: public/uploads
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-
-    // Write file to target path
-    const filePath = path.join(uploadDir, cleanFilename);
-    fs.writeFileSync(filePath, buffer);
-
-    // Return the relative URL to access the uploaded file
-    const fileUrl = `/uploads/${cleanFilename}`;
-    return NextResponse.json({ success: true, url: fileUrl });
+    return NextResponse.json({ success: true, url: dataUrl });
   } catch (error) {
-    console.error("Error al subir archivo:", error);
+    console.error("Error al procesar subida en base64:", error);
     return NextResponse.json({ error: "Error interno del servidor al procesar la subida." }, { status: 500 });
   }
 }
