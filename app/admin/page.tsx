@@ -89,6 +89,7 @@ export default function AdminDashboardPage() {
   const [categoriaNoticia, setCategoriaNoticia] = useState("Campaña");
   const [fechaNoticia, setFechaNoticia] = useState("");
   const [imagenNoticia, setImagenNoticia] = useState("");
+  const [subidaMetodo, setSubidaMetodo] = useState<"subir" | "url">("url");
   const [tipoMedioNoticia, setTipoMedioNoticia] = useState<"foto" | "video">("foto");
   const [videoUrlNoticia, setVideoUrlNoticia] = useState("");
   const [estadoNoticia, setEstadoNoticia] = useState<"borrador" | "publicado">("borrador");
@@ -218,6 +219,32 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/admin/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setImagenNoticia(data.url);
+        alert("Imagen subida con éxito: " + data.url);
+      } else {
+        alert(data.error || "Error al subir la imagen.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error de conexión al subir la imagen.");
+    }
+  };
+
   const resetNoticiaForm = () => {
     setCurrentId(null);
     setTituloNoticia("");
@@ -226,6 +253,7 @@ export default function AdminDashboardPage() {
     setCategoriaNoticia("Campaña");
     setFechaNoticia("");
     setImagenNoticia("");
+    setSubidaMetodo("url");
     setTipoMedioNoticia("foto");
     setVideoUrlNoticia("");
     setEstadoNoticia("borrador");
@@ -239,6 +267,7 @@ export default function AdminDashboardPage() {
     setCategoriaNoticia(n.categoria);
     setFechaNoticia(n.fecha.substring(0, 10));
     setImagenNoticia(n.imagen_principal || "");
+    setSubidaMetodo("url");
     setTipoMedioNoticia(n.tipo_medio || "foto");
     setVideoUrlNoticia(n.video_url || "");
     setEstadoNoticia(n.estado);
@@ -571,17 +600,52 @@ export default function AdminDashboardPage() {
 
                   {tipoMedioNoticia === "foto" ? (
                     <div className="space-y-1">
-                      <label className="block text-xs font-bold text-zinc-400 uppercase">Ruta / Enlace Imagen Principal</label>
-                      <div className="relative">
-                        <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-                        <input
-                          type="text"
-                          value={imagenNoticia}
-                          onChange={(e) => setImagenNoticia(e.target.value)}
-                          placeholder="/FOTOS/foto1.jpeg o URL externa"
-                          className="w-full pl-10 pr-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red/30 text-white"
-                        />
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="block text-xs font-bold text-zinc-400 uppercase">Imagen Principal</label>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setSubidaMetodo("url")}
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded transition-colors ${subidaMetodo === "url" ? "bg-brand-red text-white" : "bg-zinc-800 text-zinc-400 hover:text-white"}`}
+                          >
+                            Dirección URL
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSubidaMetodo("subir")}
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded transition-colors ${subidaMetodo === "subir" ? "bg-brand-red text-white" : "bg-zinc-800 text-zinc-400 hover:text-white"}`}
+                          >
+                            Subir Foto
+                          </button>
+                        </div>
                       </div>
+
+                      {subidaMetodo === "url" ? (
+                        <div className="relative">
+                          <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                          <input
+                            type="text"
+                            value={imagenNoticia}
+                            onChange={(e) => setImagenNoticia(e.target.value)}
+                            placeholder="/FOTOS/foto1.jpeg o URL externa"
+                            className="w-full pl-10 pr-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red/30 text-white"
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex gap-2 items-center bg-zinc-950 border border-zinc-800 rounded-xl p-2 h-[46px]">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFileUpload}
+                            className="w-full text-xs text-zinc-400 file:mr-3 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-[10px] file:font-extrabold file:bg-brand-red file:text-white hover:file:bg-brand-red/90 cursor-pointer"
+                          />
+                          {imagenNoticia && (
+                            <span className="text-[10px] text-brand-gold font-bold truncate max-w-[120px] bg-brand-gold/10 px-2 py-1 rounded" title={imagenNoticia}>
+                              ¡Subida!
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="space-y-1">
